@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Lock Box - Cloud Control</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; margin: 0; padding: 20px; }
+    .container { max-width: 400px; margin: 30px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
+    p { color: #7f8c8d; margin-bottom: 30px; }
+    .btn { display: block; width: 100%; padding: 18px; margin: 15px 0; font-size: 18px; font-weight: bold; color: white; border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; box-sizing: border-box; }
+    .btn-open { background-color: #2ecc71; box-shadow: 0 4px #27ae60; }
+    .btn-open:active { background-color: #27ae60; box-shadow: 0 0; transform: translateY(4px); }
+    .btn-lock { background-color: #e74c3c; box-shadow: 0 4px #c0392b; }
+    .btn-lock:active { background-color: #c0392b; box-shadow: 0 0; transform: translateY(4px); }
+    .status { margin-top: 25px; padding: 10px; font-size: 16px; color: #34495e; background: #ecf0f1; border-radius: 8px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Smart Lock Box</h1>
+    <p>Điều khiển qua Firebase ☁️</p>
+    
+    <button class="btn btn-open" onclick="sendCommand('OPEN')">🔓 MỞ KHÓA BẢO ĐẢM</button>
+    <button class="btn btn-lock" onclick="sendCommand('LOCK')">🔒 KHÓA HỘP LẠI</button>
+    
+    <div class="status" id="statusBox">Trạng thái: Đang chờ lệnh...</div>
+  </div>
+
+  <script>
+    // ================= CẤU HÌNH FIREBASE CỦA BẠN =================
+    // Đã điền sẵn URL và Secret Key mà bạn cung cấp
+    const DATABASE_URL = "https://lockbox-38ce7-default-rtdb.asia-southeast1.firebasedatabase.app/lockbox/command.json";
+    const FIREBASE_SECRET = "AO6RURBZ6wwZEyAgRlJU1SdiZCOVZpMbvPotT3sg";
+
+    // Hàm gọi API trực tiếp lên Firebase (REST API)
+    function sendCommand(cmd) {
+      const statusBox = document.getElementById('statusBox');
+      statusBox.innerText = "Đang gửi tín hiệu: " + cmd + "...";
+      statusBox.style.color = "#d35400"; // Màu cam
+
+      // Đẩy lệnh (OPEN hoặc LOCK) lên biến /lockbox/command
+      fetch(`${DATABASE_URL}?auth=${FIREBASE_SECRET}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(cmd) // Firebase yêu cầu định dạng JSON
+      })
+      .then(response => {
+        if(response.ok) {
+          statusBox.innerText = "✅ Đã gửi thành công: " + cmd;
+          statusBox.style.color = "#27ae60"; // Màu xanh
+        } else {
+          statusBox.innerText = "❌ Lỗi Firebase: " + response.status;
+          statusBox.style.color = "#c0392b"; // Màu đỏ
+        }
+      })
+      .catch(error => {
+        statusBox.innerText = "❌ Không có mạng: " + error.message;
+        statusBox.style.color = "#c0392b";
+      });
+    }
+  </script>
+</body>
+</html>
