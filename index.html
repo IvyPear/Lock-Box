@@ -3,63 +3,253 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Lock Box - Cloud Control</title>
+  <title>Smart Lock Box Pro (Web Timer)</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; text-align: center; margin: 0; padding: 20px; }
-    .container { max-width: 400px; margin: 30px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-    h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
-    p { color: #7f8c8d; margin-bottom: 30px; }
-    .btn { display: block; width: 100%; padding: 18px; margin: 15px 0; font-size: 18px; font-weight: bold; color: white; border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; box-sizing: border-box; }
-    .btn-open { background-color: #2ecc71; box-shadow: 0 4px #27ae60; }
-    .btn-open:active { background-color: #27ae60; box-shadow: 0 0; transform: translateY(4px); }
-    .btn-lock { background-color: #e74c3c; box-shadow: 0 4px #c0392b; }
-    .btn-lock:active { background-color: #c0392b; box-shadow: 0 0; transform: translateY(4px); }
-    .status { margin-top: 25px; padding: 10px; font-size: 16px; color: #34495e; background: #ecf0f1; border-radius: 8px; font-weight: bold; }
+    :root {
+      --bg-color: #e0e5ec; --text-color: #4a5568; --shadow-light: #ffffff;
+      --shadow-dark: #a3b1c6; --primary: #2ecc71; --danger: #e74c3c; --warning: #f39c12;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color);
+      color: var(--text-color); margin: 0; padding: 15px;
+      display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+    }
+    .container {
+      width: 100%; max-width: 400px; background: var(--bg-color);
+      padding: 25px; border-radius: 20px; margin-top: 15px; text-align: center;
+      box-shadow: 9px 9px 16px var(--shadow-dark), -9px -9px 16px var(--shadow-light);
+      box-sizing: border-box;
+    }
+    h1 { font-size: 22px; margin-bottom: 5px; color: #2d3748; }
+    p { font-size: 13px; color: #718096; margin-bottom: 20px; }
+    
+    .btn {
+      width: 100%; padding: 14px; margin: 8px 0; font-size: 15px; font-weight: bold; 
+      border: none; border-radius: 12px; background: var(--bg-color); color: var(--text-color); cursor: pointer;
+      box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      transition: all 0.2s;
+    }
+    .btn:active { box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light); }
+    .btn-open { color: var(--primary); }
+    .btn-lock { color: var(--danger); }
+    .btn-timer { color: var(--warning); }
+
+    input {
+      width: 100%; padding: 14px; margin-bottom: 15px; border: none; border-radius: 12px; 
+      background: var(--bg-color); color: var(--text-color); font-size: 15px; text-align: center; font-weight: bold;
+      box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+      box-sizing: border-box; outline: none;
+    }
+
+    .status { margin-top: 15px; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light); }
+    
+    .flex-row { display: flex; gap: 10px; }
+    
+    .card-title { font-size: 15px; border-bottom: 2px solid var(--shadow-dark); padding-bottom: 5px; text-align: left; margin-top: 25px;}
+    .history-list { list-style: none; padding: 0; max-height: 150px; overflow-y: auto; text-align: left;}
+    .history-list li { padding: 8px; border-bottom: 1px solid #cbd5e0; font-size: 12px; }
+    
+    /* Đồng hồ đếm ngược lớn trên Web */
+    .countdown-display {
+      font-size: 32px; font-weight: bold; color: var(--warning); margin: 15px 0;
+      display: none;
+    }
+
+    #dashboardScreen { display: none; }
   </style>
 </head>
 <body>
-  <div class="container">
+
+  <div class="container" id="loginScreen">
+    <h1>Bảo Mật Hệ Thống</h1>
+    <p>Đang tải cấu hình bảo mật...</p>
+    <input type="password" id="passInput" placeholder="Nhập mật khẩu Web">
+    <button class="btn" onclick="checkLogin()">🔓 Đăng Nhập</button>
+    <div class="status" id="loginStatus" style="display:none; color: var(--danger);">Sai mật khẩu!</div>
+  </div>
+
+  <div class="container" id="dashboardScreen">
     <h1>Smart Lock Box</h1>
-    <p>Điều khiển qua Firebase ☁️</p>
+    <p>Bảng điều khiển & Hẹn giờ từ xa ☁ ??</p>
     
-    <button class="btn btn-open" onclick="sendCommand('OPEN')">🔓 MỞ KHÓA BẢO ĐẢM</button>
-    <button class="btn btn-lock" onclick="sendCommand('LOCK')">🔒 KHÓA HỘP LẠI</button>
+    <button class="btn btn-open" onclick="manualOpen()">🔓 MỞ KHÓA NGAY LẬP TỨC</button>
+    <button class="btn btn-lock" onclick="manualLock()">🔒 KHÓA VÔ THỜI HẠN</button>
     
-    <div class="status" id="statusBox">Trạng thái: Đang chờ lệnh...</div>
+    <div class="flex-row" style="margin-top: 10px;">
+      <input type="number" id="timerInput" placeholder="Số phút khóa" style="margin-bottom: 0;">
+      <button class="btn btn-timer" style="margin: 0;" onclick="startWebTimer()">⏳ HẸN GIỜ</button>
+    </div>
+
+    <div class="countdown-display" id="countdownBox">00:00</div>
+    
+    <div class="status" id="statusBox">Đang chờ lệnh...</div>
+
+    <div class="card-title">⚙️ Đổi Mật Khẩu Web</div>
+    <div class="flex-row" style="margin-top: 15px;">
+      <input type="password" id="newPassInput" placeholder="Pass mới" style="margin-bottom: 0;">
+      <button class="btn" style="margin: 0; font-size: 12px;" onclick="changePassword()">💾 Lưu Pass</button>
+    </div>
+
+    <div class="card-title">📜 Lịch sử hoạt động</div>
+    <ul class="history-list" id="historyList"><li>Đang tải...</li></ul>
   </div>
 
   <script>
-    // ================= CẤU HÌNH FIREBASE CỦA BẠN =================
-    // Đã điền sẵn URL và Secret Key mà bạn cung cấp
-    const DATABASE_URL = "https://lockbox-38ce7-default-rtdb.asia-southeast1.firebasedatabase.app/lockbox/command.json";
+    const DATABASE_URL = "https://lockbox-38ce7-default-rtdb.asia-southeast1.firebasedatabase.app";
     const FIREBASE_SECRET = "AO6RURBZ6wwZEyAgRlJU1SdiZCOVZpMbvPotT3sg";
+    let cloudPassword = "1234"; // Mật khẩu dự phòng nếu Firebase trống
+    let timerInterval = null;   // Biến quản lý bộ đếm thời gian ngầm
 
-    // Hàm gọi API trực tiếp lên Firebase (REST API)
-    function sendCommand(cmd) {
-      const statusBox = document.getElementById('statusBox');
-      statusBox.innerText = "Đang gửi tín hiệu: " + cmd + "...";
-      statusBox.style.color = "#d35400"; // Màu cam
+    // Tải mật khẩu từ Cloud khi vừa mở trang Web
+    window.onload = function() {
+      fetch(`${DATABASE_URL}/lockbox/password.json?auth=${FIREBASE_SECRET}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data !== null) cloudPassword = String(data);
+          document.querySelector('#loginScreen p').innerText = "Hệ thống bảo mật sẵn sàng!";
+        });
+    }
 
-      // Đẩy lệnh (OPEN hoặc LOCK) lên biến /lockbox/command
-      fetch(`${DATABASE_URL}?auth=${FIREBASE_SECRET}`, {
+    // Xử lý đăng nhập
+    function checkLogin() {
+      const pass = document.getElementById('passInput').value;
+      if (pass === cloudPassword) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboardScreen').style.display = 'block';
+        loadHistory(); 
+      } else {
+        document.getElementById('loginStatus').style.display = 'block';
+        setTimeout(() => document.getElementById('loginStatus').style.display = 'none', 2000);
+      }
+    }
+
+    // Hàm cốt lõi gửi chuỗi lên Firebase
+    function sendRawCommand(cmd, callback) {
+      fetch(`${DATABASE_URL}/lockbox/command.json?auth=${FIREBASE_SECRET}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(cmd) // Firebase yêu cầu định dạng JSON
-      })
-      .then(response => {
-        if(response.ok) {
-          statusBox.innerText = "✅ Đã gửi thành công: " + cmd;
-          statusBox.style.color = "#27ae60"; // Màu xanh
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cmd)
+      }).then(res => {
+        if (res.ok && callback) callback();
+      });
+    }
+
+    // Bấm nút Mở thủ công
+    function manualOpen() {
+      clearInterval(timerInterval); // Hủy bộ đếm ngược nếu đang chạy hẹn giờ
+      document.getElementById('countdownBox').style.display = 'none';
+      document.getElementById('statusBox').innerText = "Đang gửi lệnh mở...";
+      
+      sendRawCommand("OPEN", () => {
+        document.getElementById('statusBox').innerText = "✅ Đã mở khóa thành công!";
+        logHistory("MỞ KHÓA");
+      });
+    }
+
+    // Bấm nút Khóa thủ công
+    function manualLock() {
+      clearInterval(timerInterval);
+      document.getElementById('countdownBox').style.display = 'none';
+      document.getElementById('statusBox').innerText = "Đang gửi lệnh khóa...";
+      
+      sendRawCommand("LOCK", () => {
+        document.getElementById('statusBox').innerText = "🔒 Đã khóa vô thời hạn!";
+        logHistory("KHÓA THƯỜNG");
+      });
+    }
+
+    // CHỨC NĂNG CHÍ MẠNG: HẸN GIỜ TRÊN WEB (ĐÁNH LỪA PHẦN CỨNG)
+    function startWebTimer() {
+      clearInterval(timerInterval); // Xóa bộ đếm cũ nếu có
+      
+      const minutes = parseInt(document.getElementById('timerInput').value);
+      if (isNaN(minutes) || minutes <= 0) {
+        alert("Vui lòng nhập số phút hợp lệ lớn hơn 0!");
+        return;
+      }
+
+      document.getElementById('statusBox').innerText = `⏳ Đang kích hoạt khóa hẹn giờ...`;
+      
+      // Bước 1: Ra lệnh KHÓA cho phần cứng trước
+      sendRawCommand("LOCK", () => {
+        document.getElementById('statusBox').innerText = `🔒 Trạng thái: Đang khóa bằng Web Timer`;
+        logHistory(`HẸN GIỜ KHÓA ${minutes} PHÚT`);
+        
+        // Bước 2: Bật đồng hồ đếm ngược trên giao diện Web
+        let totalSeconds = minutes * 60;
+        const countdownBox = document.getElementById('countdownBox');
+        countdownBox.style.display = 'block';
+        
+        // Cập nhật giao diện đếm ngược mỗi giây
+        timerInterval = setInterval(() => {
+          totalSeconds--;
+          
+          let minDisplay = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+          let secDisplay = (totalSeconds % 60).toString().padStart(2, '0');
+          countdownBox.innerText = `${minDisplay}:${secDisplay}`;
+          
+          // Khi đếm ngược về 0 -> Tự động bắn lệnh OPEN ra chốt cửa
+          if (totalSeconds <= 0) {
+            clearInterval(timerInterval);
+            countdownBox.style.display = 'none';
+            document.getElementById('statusBox').innerText = "⏰ Hết giờ! Đang tự động mở khóa...";
+            
+            sendRawCommand("OPEN", () => {
+              document.getElementById('statusBox').innerText = "✅ Đã tự động mở hộp khi hết giờ!";
+              logHistory("HẾT GIỜ TỰ MỞ");
+            });
+          }
+        }, 1000);
+      });
+    }
+
+    // Tính năng đổi mật khẩu lưu thẳng lên Firebase Cloud
+    function changePassword() {
+      const newPass = document.getElementById('newPassInput').value;
+      if (newPass.length < 4) {
+        alert("Mật khẩu mới phải có tối thiểu 4 số!"); return;
+      }
+      
+      const confirmPass = prompt("Nhập mật khẩu Web HIỆN TẠI để xác thực quyền quản trị:");
+      if (confirmPass === cloudPassword) {
+        fetch(`${DATABASE_URL}/lockbox/password.json?auth=${FIREBASE_SECRET}`, {
+          method: 'PUT', body: JSON.stringify(newPass)
+        }).then(() => {
+          cloudPassword = newPass;
+          alert("🎉 Tuyệt vời! Đã cập nhật mật khẩu mới lên Cloud thành công.");
+          document.getElementById('newPassInput').value = "";
+        });
+      } else {
+        alert("❌ Xác thực thất bại! Sai mật khẩu hiện tại.");
+      }
+    }
+
+    // Quản lý Nhật ký lịch sử
+    function logHistory(actionText) {
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')} - ${now.getDate()}/${now.getMonth()+1}`;
+
+      fetch(`${DATABASE_URL}/lockbox/history.json?auth=${FIREBASE_SECRET}`, {
+        method: 'POST', body: JSON.stringify({ action: actionText, time: timeStr })
+      }).then(loadHistory);
+    }
+
+    function loadHistory() {
+      fetch(`${DATABASE_URL}/lockbox/history.json?auth=${FIREBASE_SECRET}`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById('historyList'); list.innerHTML = '';
+        if (data) {
+          const logs = Object.values(data).reverse().slice(0, 8); // Hiện 8 dòng gần nhất
+          logs.forEach(log => {
+            let color = "var(--danger)";
+            if(log.action.includes("MỞ")) color = "var(--primary)";
+            if(log.action.includes("HẸN")) color = "var(--warning)";
+            list.innerHTML += `<li><span style="color: ${color}; font-weight: bold;">${log.action}</span> | Giờ: ${log.time}</li>`;
+          });
         } else {
-          statusBox.innerText = "❌ Lỗi Firebase: " + response.status;
-          statusBox.style.color = "#c0392b"; // Màu đỏ
+          list.innerHTML = '<li>Chưa có nhật ký hoạt động nào.</li>';
         }
-      })
-      .catch(error => {
-        statusBox.innerText = "❌ Không có mạng: " + error.message;
-        statusBox.style.color = "#c0392b";
       });
     }
   </script>
